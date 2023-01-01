@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Display a map on a webpage</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.3.min.js" ></script>
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    .mapboxgl-ctrl-geocoder--input {
+      opacity: 0.3;
+      width: 350px !important;
+    }
+    .mapboxgl-ctrl-geocoder--input:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+<div id="map"></div>
+<!--<div id="searchContainer">-->
+<!--  <input id="searchKey" width="300px" />-->
+<!--  <button>search</button>-->
+<!--</div>-->
+<script>
+  mapboxgl.accessToken = 'pk.eyJ1Ijoib21yYW4yMDAwIiwiYSI6ImNsY2QxZmEwZTFuNWwzcHBjdGM5cXBoZm4ifQ.DS17DK-3UlNzJlYI5Pv_7A';
+  const map = new mapboxgl.Map({
+    container: 'map', // container ID
+    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+    style: 'mapbox://styles/mapbox/streets-v12', // style URL
+    center: [36, 32], // starting position [lng, lat]
+    zoom: 9 // starting zoom
+  });
+
+  const coordinatesGeocoder = function (query) {
+
+    let findByCityUrl = "http://api.positionstack.com/v1/forward?access_key=1a93df125942b75fee6405b12ca0b648&query="+query;
+
+    var lat = null;
+    var lng = null;
+    $.get(findByCityUrl, function(data, status){
+      lat = data.data[0].latitude;
+      lng = data.data[0].longitude;
+    });
+
+    function coordinateFeature(lng, lat) {
+      return {
+        center: [lng, lat],
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        },
+        place_name: 'Lat: ' + lat + ' Lng: ' + lng,
+        place_type: ['coordinate'],
+        properties: {},
+        type: 'Feature'
+      };
+    }
+
+    const geocodes = [];
+
+    if (lng < -90 || lng > 90) {
+      geocodes.push(coordinateFeature(lng, lat));
+    }
+
+    if (lat < -90 || lat > 90) {
+      geocodes.push(coordinateFeature(lat, lng));
+    }
+
+    if (geocodes.length === 0) {
+      geocodes.push(coordinateFeature(lng, lat));
+      geocodes.push(coordinateFeature(lat, lng));
+    }
+
+    return geocodes;
+  };
+
+  // Add the control to the map.
+  map.addControl(
+          new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            localGeocoder: coordinatesGeocoder,
+            zoom: 4,
+            placeholder: 'Try: Amman',
+            mapboxgl: mapboxgl,
+            reverseGeocode: true
+          })
+  );
+</script>
+</body>
+</html>
